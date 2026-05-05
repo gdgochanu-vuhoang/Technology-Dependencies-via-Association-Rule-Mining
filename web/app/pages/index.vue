@@ -1,11 +1,12 @@
 <template>
     <div class="bg-neutral-800 w-full h-full min-h-screen flex">
         <div class="h-full w-80 bg-neutral-700 fixed inset-0 flex flex-col px-6 py-20 gap-10">
-            <div class="mb-10">
+            <div class="mb-6">
                 <h1 class="text-xl text-info-300 font-bold text-center">Technology Dependencies <span
                         class="text-sm">via</span>
                     <br>Association Rule Mining
                 </h1>
+                <p class="text-xs text-info-400 text-center">by Vu Viet Hoang / 2301140037</p>
             </div>
             <div class="flex flex-col">
                 <h3 class="text-lg font-bold text-info-300">Select Focus:</h3>
@@ -40,7 +41,7 @@
         </div>
         <div class="w-80 h-full shrink-0" />
         <div class="w-full px-4 flex flex-col gap-6 pb-10">
-            <h1 class="text-3xl font-bold text-info-300">{{ givenTechs.length ? curMode === 1 ? 'Top Technology Stacks to Learn Next' : 'Top Prerequisite Technology Stacks' : `Top Technology Stack for ${activeRole?.label}` }}</h1>
+            <h1 v-if="activeRole" class="text-3xl font-bold text-info-300">{{ givenTechs.length ? curMode === 1 ? 'Top Technology Stacks to Learn Next' : 'Top Prerequisite Technology Stacks' : `Top Technology Stack for ${activeRole?.label}` }}</h1>
             <div v-if="stats" class="rounded-lg flex gap-6 items-center w-full bg-neutral-700 text-info-300 px-10 py-4 sticky rounded-lg top-2 border-b border-info-300">
                         <p>Max.Support: {{ formatMetric(true, stats?.maxSupport) }}</p>
                         <p>Max.Confidence: {{ formatMetric(true, stats?.maxConfidence) }}</p>
