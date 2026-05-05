@@ -40,6 +40,7 @@
         </div>
         <div class="w-80 h-full shrink-0" />
         <div class="w-full px-4 flex flex-col gap-6 pb-10">
+            <h1 class="text-3xl font-bold text-info-300">{{ givenTechs.length ? curMode === 1 ? 'Top Technology Stacks to Learn Next' : 'Top Prerequisite Technology Stacks' : `Top Technology Stack for ${activeRole?.label}` }}</h1>
             <div v-if="stats" class="rounded-lg flex gap-6 items-center w-full bg-neutral-700 text-info-300 px-10 py-4 sticky rounded-lg top-2 border-b border-info-300">
                         <p>Max.Support: {{ formatMetric(true, stats?.maxSupport) }}</p>
                         <p>Max.Confidence: {{ formatMetric(true, stats?.maxConfidence) }}</p>
@@ -48,7 +49,7 @@
                         <p class="ml-2">Avg.Confidence: {{ formatMetric(true, stats?.avgConfidence) }}</p>
                         <p>Avg.Lift: {{ formatMetric(false, stats?.avgLift) }}</p>
             </div>
-            <TransactionBlock v-for="(transaction, id) in curData" :transaction="transaction" :key="id" />
+            <TransactionBlock v-for="(transaction, id) in curData" :transaction="transaction" :key="id" :givenTechs="givenTechs" :mode="curMode" />
             <div v-if="curData.length" class="rounded-lg flex items-center justify-center justify w-full bg-neutral-700" ref="loader">
                 <UIcon :name="loading ? 'i-lucide-loader-circle' : 'i-lucide-ellipsis'" class="size-20 bg-info-300" :class="loading && 'animate-spin'" />
             </div>
