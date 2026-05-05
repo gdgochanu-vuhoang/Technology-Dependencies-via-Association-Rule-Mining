@@ -1,4 +1,3 @@
-// app/composables/useData.ts
 export type Transaction = {
     antecedents: string[]
     consequents: string[]
@@ -47,103 +46,116 @@ export const useData = () => {
         }
     }
 
-    const filterByMode = (mode?: number, keywords?: string[]) => {
+    const filterByMode = (mode?: number, keywords?: string[], matchAll?: boolean) => {
         if (!mode || !keywords || keywords.length === 0) return allData.value
 
         return allData.value.filter(t => {
             const relevantTechs = mode === 1 ? t.antecedents : t.consequents
-            return keywords.some(keyword =>
-                relevantTechs.some(tech =>
-                    tech.toLowerCase().includes(keyword.toLowerCase())
+
+            if (matchAll) {
+                return keywords.every(keyword =>
+                    relevantTechs.some(tech =>
+                        tech.toLowerCase().includes(keyword.toLowerCase())
+                    )
                 )
-            )
+            } else {
+                return keywords.some(keyword =>
+                    relevantTechs.some(tech =>
+                        tech.toLowerCase().includes(keyword.toLowerCase())
+                    )
+                )
+            }
         })
     }
 
-    const loadMore = (from: 'all' | 'filtered') => {
-        const start = (curPage.value - 1) * LIMIT
+    const loadMore = (from: 'all' | 'filtered', page?: number) => {
+        const start = (page ? page - 1 : curPage.value - 1) * LIMIT
         const end = start + LIMIT
+        console.log(start)
         if (from === 'all') {
             allData.value.slice(start, end).forEach(e => {
                 curData.value.push(e)
             })
         }
         else {
-            filteredData.value.splice(start, end).forEach(e => {
+            filteredData.value.slice(start, end).forEach(e => {
                 curData.value.push(e)
             })
         }
-        curPage.value++
+        if (!page) curPage.value++
+        else (curPage.value = page)
     }
 
-    const fetchAll = async (rolePath?: string, mode?: number, keywords?: string[]) => {
+    const fetchAll = async (rolePath?: string, mode?: number, keywords?: string[], matchAll?: boolean) => {
         if (!rolePath || !mode) return
         loading.value = true
         curPage.value = 1
         error.value = null
         curData.value = []
+        filteredData.value = []
+        stats.value = {
+            avgSupport: 0,
+            maxSupport: 0,
+            avgConfidence: 0,
+            maxConfidence: 0,
+            avgLift: 0,
+            maxLift: 0
+        }
         if (rolePath === curRole.value) {
-            console.log('filtering all')
             try {
-                filteredData.value = filterByMode(mode, keywords)
+                filteredData.value = filterByMode(mode, keywords, matchAll)
                 calculateStats(filteredData.value)
-                loadMore('filtered')
+                loadMore('filtered', 1)
             } catch (err) {
                 error.value = err instanceof Error ? err.message : 'Unknown error'
             }
 
-        finally {
-            loading.value = false
-            return
+            finally {
+                loading.value = false
+                return
+            }
+        }
+        else {
+            curRole.value = rolePath
+            try {
+                const response = await fetch(`/roles_rules/${rolePath}`)
+                if (!response.ok) throw new Error(`Failed to load ${rolePath}`)
+
+                const rawData = await response.json()
+
+                let transactions: Transaction[] = rawData.map((item: any) => ({
+                    antecedents: item.antecedents.split(',').map((s: string) => s.trim()),
+                    consequents: item.consequents.split(',').map((s: string) => s.trim()),
+                    support: item.support,
+                    confidence: item.confidence,
+                    lift: item.lift,
+                }))
+
+                calculateStats(transactions)
+
+                allData.value = transactions
+
+                if (keywords) {
+                    filteredData.value = filterByMode(mode, keywords, matchAll)
+                    calculateStats(filteredData.value)
+                    loadMore('filtered', 1)
+                    return
+                }
+                calculateStats(allData.value)
+                loadMore('all')
+            } catch (err) {
+                error.value = err instanceof Error ? err.message : 'Unknown error'
+            } finally {
+                loading.value = false
+            }
         }
     }
-    console.log('loading all')
-    curRole.value = rolePath
-    filteredData.value = []
-    try {
-        const response = await fetch(`/roles_rules/${rolePath}`)
-        if (!response.ok) throw new Error(`Failed to load ${rolePath}`)
 
-        const rawData = await response.json()
-
-        let transactions: Transaction[] = rawData.map((item: any) => ({
-            antecedents: item.antecedents.split(',').map((s: string) => s.trim()),
-            consequents: item.consequents.split(',').map((s: string) => s.trim()),
-            support: item.support,
-            confidence: item.confidence,
-            lift: item.lift,
-        }))
-
-        calculateStats(transactions)
-
-        allData.value = transactions
-
-        if (keywords) {
-            filteredData.value = filterByMode(mode, keywords)
-            calculateStats(filteredData.value)
-            loadMore('filtered')
-            return
-        }
-        calculateStats(allData.value)
-        loadMore('all')
-    } catch (err) {
-        error.value = err instanceof Error ? err.message : 'Unknown error'
-    } finally {
-        loading.value = false
+    return {
+        loading,
+        curData,
+        stats,
+        fetchAll,
+        loadMore
     }
-}
-
-    const clearAll = () => {
-        loading.value = true
-        curPage.value = 1
-        filteredData.value = []
-        loadMore('all')
-    }
-
-return {
-    loading,
-    curData,
-    stats,
-    fetchAll
-}
 }

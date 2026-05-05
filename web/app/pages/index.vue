@@ -13,7 +13,7 @@
             </div>
             <div class="flex flex-col">
                 <h3 class="text-lg font-bold text-info-300">Select Technology:</h3>
-                <ToggleSwich v-model="curMode"/>
+                <ToggleSwich v-model="curMode" />
                 <div
                     class="h-30 border border-info-300 rounded-lg p-3 bg-white focus-within:ring-2 focus-within:ring-info-200 mt-2 overflow-y-auto">
                     <div v-if="givenTechs.length > 0" class="flex flex-wrap gap-2 mb-2">
@@ -27,6 +27,7 @@
                     <input v-model="givenTechsInput" type="text" name="techsInput" placeholder="Enter technologies..."
                         class="w-full outline-none bg-transparent text-sm" @focusout="handleTechsInput" />
                 </div>
+                <UCheckbox v-model="matchAll" label="Must match all given technologies" class="mt-2" color="info" :ui="{ label: 'text-info-300'}"/>
                 <div class="flex gap-2 mt-2">
                     <UButton color="error" icon="i-lucide-x" label="Clear" class="w-1/3 cursor-pointer"
                         @click="handleClear" :loading="loading" />
@@ -38,8 +39,19 @@
             </div>
         </div>
         <div class="w-80 h-full shrink-0" />
-        <div class="w-full">
-            {{ curData }}
+        <div class="w-full px-4 flex flex-col gap-6 pb-10">
+            <div v-if="stats" class="rounded-lg flex gap-6 items-center w-full bg-neutral-700 text-info-300 px-10 py-4 sticky rounded-lg top-2 border-b border-info-300">
+                        <p>Max.Support: {{ formatMetric(true, stats?.maxSupport) }}</p>
+                        <p>Max.Confidence: {{ formatMetric(true, stats?.maxConfidence) }}</p>
+                        <p>Max.Lift: {{ formatMetric(false, stats?.maxLift) }}</p>
+                        <p class="ml-18">Avg.Support: {{ formatMetric(true, stats?.avgSupport) }}</p>
+                        <p class="ml-2">Avg.Confidence: {{ formatMetric(true, stats?.avgConfidence) }}</p>
+                        <p>Avg.Lift: {{ formatMetric(false, stats?.avgLift) }}</p>
+            </div>
+            <TransactionBlock v-for="(transaction, id) in curData" :transaction="transaction" :key="id" />
+            <div v-if="curData.length" class="rounded-lg flex items-center justify-center justify w-full bg-neutral-700" ref="loader">
+                <UIcon :name="loading ? 'i-lucide-loader-circle' : 'i-lucide-ellipsis'" class="size-20 bg-info-300" :class="loading && 'animate-spin'" />
+            </div>
         </div>
     </div>
 </template>
@@ -87,10 +99,12 @@ const roles = [
     { label: 'System Administrator', rules_path: 'system_administrator_rules.json' },
 ]
 
+const matchAll = ref<boolean>(false)
+
 const givenTechsInput = ref('')
 const givenTechs = ref<string[]>([])
 
-const curMode = ref<number>()
+const curMode = ref<number>(1)
 
 const handleTechsInput = () => {
     if (!givenTechsInput.value.trim()) return
@@ -120,7 +134,7 @@ const handleClear = () => {
 
 const handleSearch = async () => {
     handleTechsInput()
-    await fetchAll(activeRole.value?.rules_path, curMode.value, givenTechs.value)
+    await fetchAll(activeRole.value?.rules_path, curMode.value, givenTechs.value, matchAll.value)
 }
 
 defineShortcuts({
@@ -130,5 +144,21 @@ defineShortcuts({
     }
 })
 
-const { loading, curData, stats, fetchAll } = useData()
+const { loading, curData, stats, fetchAll, loadMore } = useData()
+
+const loader = useTemplateRef('loader')
+useInfiniteScroll(
+  loader,
+  () => {
+    loadMore(givenTechs.value.length ? 'filtered' : 'all')
+  },
+  {
+    distance: 10,
+    canLoadMore: () => {
+      // inidicate when there is no more content to load so onLoadMore stops triggering
+      // if (noMoreContent) return false
+      return true // for demo purposes
+    },
+  }
+)
 </script>
