@@ -29,9 +29,9 @@
                 </div>
                 <div class="flex gap-2 mt-2">
                     <UButton color="error" icon="i-lucide-x" label="Clear" class="w-1/3 cursor-pointer"
-                        @click="handleClear" />
+                        @click="handleClear" :loading="loading" />
                     <UButton color="info" icon="i-lucide-search" label="Search" class="w-full cursor-pointer"
-                        @click="handleSearch" />
+                        @click="handleSearch" :loading="loading" />
                 </div>
                 <p class="text-sm text-info-200 mt-2">*Select your purpose & enter the name of technologies you are
                     interested in above, seperate each with a blank space " " or press enter after each one.</p>
@@ -120,7 +120,7 @@ const handleClear = () => {
 
 const handleSearch = async () => {
     handleTechsInput()
-    await fetchAll()
+    await fetchAll(activeRole.value?.rules_path, curMode.value, givenTechs.value)
 }
 
 defineShortcuts({
@@ -130,5 +130,5 @@ defineShortcuts({
     }
 })
 
-const { curData, stats, fetchAll } = useData()
+const { loading, curData, stats, fetchAll } = useData()
 </script>

@@ -47,11 +47,11 @@ export const useData = () => {
         }
     }
 
-    const filterByMode = (mode?: 'from' | 'to', keywords?: string[]) => {
+    const filterByMode = (mode?: number, keywords?: string[]) => {
         if (!mode || !keywords || keywords.length === 0) return allData.value
 
         return allData.value.filter(t => {
-            const relevantTechs = mode === 'from' ? t.antecedents : t.consequents
+            const relevantTechs = mode === 1 ? t.antecedents : t.consequents
             return keywords.some(keyword =>
                 relevantTechs.some(tech =>
                     tech.toLowerCase().includes(keyword.toLowerCase())
@@ -76,12 +76,14 @@ export const useData = () => {
         curPage.value++
     }
 
-    const fetchAll = async (rolePath?: string, mode?: 'from' | 'to', keywords?: string[]) => {
+    const fetchAll = async (rolePath?: string, mode?: number, keywords?: string[]) => {
         if (!rolePath || !mode) return
         loading.value = true
         curPage.value = 1
         error.value = null
+        curData.value = []
         if (rolePath === curRole.value) {
+            console.log('filtering all')
             try {
                 filteredData.value = filterByMode(mode, keywords)
                 calculateStats(filteredData.value)
@@ -95,7 +97,9 @@ export const useData = () => {
             return
         }
     }
+    console.log('loading all')
     curRole.value = rolePath
+    filteredData.value = []
     try {
         const response = await fetch(`/roles_rules/${rolePath}`)
         if (!response.ok) throw new Error(`Failed to load ${rolePath}`)
@@ -129,7 +133,15 @@ export const useData = () => {
     }
 }
 
+    const clearAll = () => {
+        loading.value = true
+        curPage.value = 1
+        filteredData.value = []
+        loadMore('all')
+    }
+
 return {
+    loading,
     curData,
     stats,
     fetchAll
